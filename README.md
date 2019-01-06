@@ -18,4 +18,22 @@ Right now the interpreter can:
 
 More will come:
 
-[] Create a to-do list
+[ ] Update REPL to support statement. Rule is: execute statement, print result of expression. 
+[ ] Throws a runtime error on uninitialized variable
+[ ] Create an exact rule for global / local scoping, i.e.:
+    
+    var a = 1;
+    {
+      var a = a + 2;
+      print a;
+    }
+    
+    in C# this will give an error. C will prints 2 because that inside `a` counts as uninitialized and uninitialized is treated as `null`, and `int` + `null` is `int`.
+    
+[ ] Implement control flow (if, while, for)
+[ ] Implement function and make sure it's first-class value 
+[ ] Upgrade variable / function binding and resolving
+[ ] Implement Basic Class (OOP)
+[ ] Implement Inheritance
+[ ] Implmenet ADT
+[ ] Learn about VM and implement VM (likely in C or Rust)
