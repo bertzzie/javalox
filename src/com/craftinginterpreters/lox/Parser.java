@@ -18,10 +18,12 @@ import static com.craftinginterpreters.lox.TokenType.*;
  * varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
  *
  * statement      → exprStmt
- *                | printStmt ;
+ *                | printStmt
+ *                | block ;
  *
  * exprStmt       → expression ";" ;
  * printStmt      → "print" expression ";" ;
+ * block          → "{" declaration* "}" ;
  *
  * expression     → assignment ;
  * assignment     → IDENTIFIER "=" assignment
@@ -87,6 +89,7 @@ class Parser {
 
     private Stmt statement() {
         if (match(PRINT)) return printStatement();
+        if (match(LEFT_BRACE)) return new Stmt.Block(block());
 
         return expressionStatement();
     }
@@ -97,6 +100,17 @@ class Parser {
 
     private Stmt expressionStatement() {
         return statementParser(Stmt.Expression::new);
+    }
+
+    private List<Stmt> block() {
+        List<Stmt> statements = new ArrayList<>();
+
+        while (!check(RIGHT_BRACE) && !isAtEnd()) {
+            statements.add(declaration());
+        }
+
+        consume(RIGHT_BRACE, "Expect '}' at the end of block.");
+        return statements;
     }
 
     private Stmt statementParser(Function<Expr, Stmt> generator) {

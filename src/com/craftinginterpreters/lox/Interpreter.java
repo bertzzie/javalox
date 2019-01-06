@@ -20,6 +20,27 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         statement.accept(this);
     }
 
+    // A better (more functional) way to do this is sending down the new environment in
+    // execute(), and every visit* methods.
+    //
+    // With this better way, it will be more "pure" and we do not need to keep state.
+    //
+    // The trade-off though, our methods will become much more verbose. We choose to
+    // do it this way (with mutating state and stuff) to get an easier to understand code.
+    private void executeBlock(List<Stmt> statements, Environment environment) {
+        Environment previous = this.environment;
+        try {
+            this.environment = environment;
+
+            for (Stmt statement : statements) {
+                execute(statement);
+            }
+        } finally { // to make sure environment is back to the previous state even on exception
+            this.environment = previous;
+        }
+
+    }
+
     private String stringify(Object value) {
         if (value == null) return "nil";
 
@@ -36,6 +57,12 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         return value.toString();
     }
 
+
+    @Override
+    public Void visitBlockStmt(Stmt.Block stmt) {
+        executeBlock(stmt.statements, new Environment(environment));
+        return null;
+    }
 
     @Override
     public Void visitExpressionStmt(Stmt.Expression stmt) {
