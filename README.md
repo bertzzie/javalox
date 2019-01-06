@@ -22,11 +22,11 @@ More will come:
 - [ ] Throws a runtime error on uninitialized variable
 - [ ] Create an exact rule for global / local scoping, i.e.:
     
-    var a = 1;
-    {
-      var a = a + 2;
-      print a;
-    }
+        var a = 1;
+        {
+          var a = a + 2;
+          print a;
+        }
     
     in C# this will give an error. C will prints 2 because that inside `a` counts as uninitialized and uninitialized is treated as `null`, and `int` + `null` is `int`.
     
