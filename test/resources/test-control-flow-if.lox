@@ -1,0 +1,29 @@
+/*
+ * Expected output:
+ * besar
+ * masuk if
+ * hi
+ * yes
+ * false
+ * 10
+ */
+
+var a = 10;
+
+if (a < 10) {
+    print "kecil";
+} else {
+    print "besar";
+}
+
+if (a >= 10) {
+    print "masuk if";
+} else {
+    print "masuk else";
+}
+
+print "hi" or 2;
+print nil or "yes";
+
+print false and 100;
+print true and 10;

@@ -18,18 +18,23 @@ import static com.craftinginterpreters.lox.TokenType.*;
  * varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
  *
  * statement      → exprStmt
+ *                | ifStmt
  *                | printStmt
  *                | block ;
  *
  * exprStmt       → expression ";" ;
+ * ifStmt         → "if" "(" expression ")" statement ( "else" statement )? ;
  * printStmt      → "print" expression ";" ;
  * block          → "{" declaration* "}" ;
  *
  * expression     → assignment ;
  * assignment     → IDENTIFIER "=" assignment
- *                | separator ;
+ *                | separator
+ *                | logic_or ;
  * separator      → ternary ( (",") ternary)* ;
- * ternary        → equality ( ( ("?") ternary )* (":") ternary )* ;
+ * ternary        → logic_or ( ( ("?") ternary )* (":") ternary )* ;
+ * logic_or       → logic_and ( "or" logic_and )* ;
+ * logic_and      → equality ( "and" equality)*
  * equality       → comparison ( ( "!=" | "==" ) comparison )* ;
  * comparison     → addition ( ( ">" | ">=" | "<" | "<=" ) addition )* ;
  * addition       → multiplication ( ( "-" | "+" ) multiplication )* ;
@@ -88,10 +93,25 @@ class Parser {
     }
 
     private Stmt statement() {
+        if (match(IF)) return ifStatement();
         if (match(PRINT)) return printStatement();
         if (match(LEFT_BRACE)) return new Stmt.Block(block());
 
         return expressionStatement();
+    }
+
+    private Stmt ifStatement() {
+        consume(LEFT_PAREN, "Expect '(' after 'if'.");
+        Expr condition = expression();
+        consume(RIGHT_PAREN, "Expect ')' after if condition.");
+
+        Stmt thenBranch = statement();
+        Stmt elseBranch = null;
+        if (match(ELSE)) {
+            elseBranch = statement();
+        }
+
+        return new Stmt.If(condition, thenBranch, elseBranch);
     }
 
     private Stmt printStatement() {
@@ -155,7 +175,7 @@ class Parser {
     }
 
     private Expr ternary() {
-        Expr expr = equality();
+        Expr expr = or();
 
         while (match(QUESTION_MARK)) {
             Expr truthy = ternary();
@@ -166,6 +186,26 @@ class Parser {
 
                 return expr;
             }
+        }
+
+        return expr;
+    }
+
+    private Expr or() {
+        return logical(this::and, OR);
+    }
+
+    private Expr and() {
+        return logical(this::equality, AND);
+    }
+
+    private Expr logical(Supplier<Expr> parserFunction, TokenType token) {
+        Expr expr = parserFunction.get();
+
+        while (match(token)) {
+            Token operator = previous();
+            Expr right = parserFunction.get();
+            expr = new Expr.Logical(expr, operator, right);
         }
 
         return expr;
@@ -190,7 +230,7 @@ class Parser {
     private Expr binary(Supplier<Expr> parserFunction, TokenType... matchedTokens) {
         Expr expr = parserFunction.get();
 
-        while(match(matchedTokens)) {
+        while (match(matchedTokens)) {
             Token operator = previous();
             Expr right = parserFunction.get();
             expr = new Expr.Binary(expr, operator, right);
