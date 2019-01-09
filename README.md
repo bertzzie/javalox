@@ -9,12 +9,36 @@ This is an exercise repo, meant to implement what's in the book with some additi
 - Language Server to integrate with editors / IDE
 - Static analysis tool
 
+## Building and Running
+
+After cloning the repo, execute:
+
+```$bash
+$ mvn package
+```
+
+to generate an executable jar in the `target` directory. 
+You can then run the file:
+
+```$bash
+$ java -jar target/lox-0.0.1-SNAPSHOT.jar
+```
+
+to see the REPL.
+
+File and build system is not really supported for now,
+but the foundation to do so is there.
+
 ## Current State
 
 Right now the interpreter can:
 
-- parse and execute statements
+- parse and execute basic statements (arithmetic, logical operation)
 - assign global variable
+- assign variable in block scope
+- execute ternary operator
+- flow control via if statement
+- looping via for and while statements
 
 More will come:
 
@@ -30,7 +54,7 @@ More will come:
     
     in C# this will give an error. C will prints 2 because that inside `a` counts as uninitialized and uninitialized is treated as `null`, and `int` + `null` is `int`.
     
-- [ ] Integrate build and packaging system (maven? gradle?)
+- [x] Integrate build and packaging system (maven? gradle?)
 - [x] Implement control flow (if, while, for)
 - [ ] Implement function and make sure it's first-class value 
 - [ ] Upgrade variable / function binding and resolving
