@@ -31,7 +31,7 @@ More will come:
     in C# this will give an error. C will prints 2 because that inside `a` counts as uninitialized and uninitialized is treated as `null`, and `int` + `null` is `int`.
     
 - [ ] Integrate build and packaging system (maven? gradle?)
-- [ ] Implement control flow (if, while, for)
+- [x] Implement control flow (if, while, for)
 - [ ] Implement function and make sure it's first-class value 
 - [ ] Upgrade variable / function binding and resolving
 - [ ] Implement Basic Class (OOP)
