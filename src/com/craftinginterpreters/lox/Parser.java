@@ -107,7 +107,18 @@ class Parser {
         return expressionStatement();
     }
 
+    /*
+     * The for statement is implemented by de-sugaring it into while.
+     *
+     * This implementation is not a fancy optimization because mostly
+     * the implementation is for learning purpose.
+     *
+     * Also notice how this way, we don't have to do anything in our
+     * Interpreter to have a for loop, because it's basically a
+     * while loop that's re-ordered.
+     */
     private Stmt forStatement() {
+        // region: consuming syntax
         consume(LEFT_PAREN, "Expect '(' after 'for'.");
 
         Stmt initializer;
@@ -132,16 +143,51 @@ class Parser {
         consume(RIGHT_PAREN, "Expect ')' after for clauses.");
 
         Stmt body = statement();
+        // end-region: consuming syntax
 
+        // We want to build the syntax tree from the deepest part for de-sugaring. For example:
+        //
+        // for (var i = 0; i < 10; i = i + 1) {
+        //    print i;
+        // }
+        //
+        // would become:
+        //
+        // var i = 0;
+        // while (i < 10) {
+        //     print i;
+        //     i = i + 1;
+        // }
+        //
+        // Notice several things:
+        // - All the statements in while (var i = 0, i < 10, print i, i = i + 1) is available in for too.
+        // - The order from deepest to shallowest is:
+        //
+        //   1. block statement ({ print i; i = i + 1; })
+        //   2. conditional (i < 10)
+        //   3. initialization (var i = 0)
+        //
+        //   We're going to parse it with the same order.
+
+        // 1. Parse the block statement, with a list of body statement and increment.
         if (increment != null) {
             body = new Stmt.Block(Arrays.asList(body, new Stmt.Expression(increment)));
         }
 
+        // 2. Parse the condition.
+        //    If there's no condition, we'll put in literal "true" so it's an infinite loop
         if (condition == null) {
             condition = new Expr.Literal(true);
         }
+
+        // 3. Build the while statement tree so we can bundle it with initializer to make sure
+        //    initializer is always run before the while statement.
         body = new Stmt.While(condition, body);
 
+        // 4. Bundle the initializer into a block to make sure of two things:
+        //
+        //    1. The initialized variable is only valid in the for-loop scope
+        //    2. The initialized statement is always called before body.
         if (initializer != null) {
             body = new Stmt.Block(Arrays.asList(initializer, body));
         }
