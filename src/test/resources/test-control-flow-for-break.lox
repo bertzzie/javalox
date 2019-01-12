@@ -1,0 +1,13 @@
+/*
+ * Expected output:
+ * 0
+ * 1
+ * 2
+ * 3
+ */
+for (var i = 0; i < 10; i = i + 1) {
+
+    if (i > 3) break;
+
+    print i;
+}

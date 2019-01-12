@@ -33,7 +33,8 @@ public class GenerateAst {
             "Print      : Expr expression",
             "Return     : Token keyword, Expr value",
             "Var        : Token name, Expr initializer",
-            "While      : Expr condition, Stmt body"
+            "While      : Expr condition, Stmt body",
+            "Break      : "
         ));
     }
 
@@ -70,6 +71,11 @@ public class GenerateAst {
                                    String baseName,
                                    String className,
                                    String fieldList) {
+        if (fieldList.isEmpty()) {
+            defineEmptyType(writer, baseName, className);
+            return;
+        }
+
         writer.println("    static class " + className + " extends " + baseName + " {");
 
         // fields
@@ -89,6 +95,23 @@ public class GenerateAst {
         writer.println("        }");
 
         // Visitor pattern
+        visitorPattern(writer, baseName, className);
+    }
+
+    private static void defineEmptyType(PrintWriter writer,
+                                        String baseName,
+                                        String className) {
+        // empty constructor
+        writer.println();
+        writer.println("    static class " + className + " extends " + baseName + " {");
+        writer.println("        " + className + "( ) {");
+        writer.println("        }");
+
+        // Visitor pattern
+        visitorPattern(writer, baseName, className);
+    }
+
+    private static void visitorPattern(PrintWriter writer, String baseName, String className) {
         writer.println();
         writer.println("        <R> R accept(Visitor<R> visitor) {");
         writer.println("            return visitor.visit" + className + baseName + "(this);");

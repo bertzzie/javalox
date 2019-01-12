@@ -56,7 +56,7 @@ More will come:
     
 - [x] Integrate build and packaging system (maven? gradle?)
 - [x] Implement control flow (if, while, for)
-- [ ] Implement break statement for looping
+- [x] Implement break statement for looping
 - [x] Implement function and make sure it's first-class value 
 - [ ] Upgrade variable / function binding and resolving
 - [ ] Implement Basic Class (OOP)

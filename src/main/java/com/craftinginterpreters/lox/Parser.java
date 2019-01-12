@@ -31,6 +31,7 @@ import static com.craftinginterpreters.lox.TokenType.*;
  *                | print_stmt
  *                | return_stmt
  *                | while_stmt
+ *                | break_stmt
  *                | block ;
  *
  * expr_stmt       → expression ";" ;
@@ -39,6 +40,7 @@ import static com.craftinginterpreters.lox.TokenType.*;
  * print_stmt      → "print" expression ";" ;
  * return_stmt     → "return" expression? ";" ;
  * while_stmt      → "while" "(" expression ")" statement ;
+ * break_stmt      → "break" ";" ;
  * block           → "{" declaration* "}" ;
  *
  * expression     → assignment ;
@@ -138,6 +140,7 @@ class Parser {
         if (match(PRINT)) return printStatement();
         if (match(RETURN)) return returnStatement();
         if (match(WHILE)) return whileStatement();
+        if (match(BREAK)) return breakStatement();
         if (match(LEFT_BRACE)) return new Stmt.Block(block());
 
         return expressionStatement();
@@ -243,6 +246,11 @@ class Parser {
         }
 
         return new Stmt.If(condition, thenBranch, elseBranch);
+    }
+
+    private Stmt breakStatement() {
+        consume(SEMICOLON, "Expect ';' after break.");
+        return new Stmt.Break();
     }
 
     private Stmt whileStatement() {
