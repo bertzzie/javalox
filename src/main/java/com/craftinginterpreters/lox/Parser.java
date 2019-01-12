@@ -13,15 +13,23 @@ import static com.craftinginterpreters.lox.TokenType.*;
  *
  * program        →  statement* EOF ;
  *
- * declaration    → var_decl
+ * declaration    → fun_decl
+ *                | var_decl
  *                | statement ;
  *
  * var_decl       → "var" IDENTIFIER ( "=" expression )? ";" ;
+ * fun_decl       → "fun" function ;
+ *
+ * function       → IDENTIFIER "(" parameters? ")" block ;
+ *
+ * parameters     → IDENTIFIER ( "," IDENTIFIER )* ;
+ * arguments      → expression ( "," expression )* ;
  *
  * statement      → expr_stmt
  *                | for_stmt
  *                | if_stmt
  *                | print_stmt
+ *                | return_stmt
  *                | while_stmt
  *                | block ;
  *
@@ -29,15 +37,16 @@ import static com.craftinginterpreters.lox.TokenType.*;
  * for_stmt        → "for" "(" ( var_decl | expr_smt | ";" ) expression? ";" expression? ")" statement ;
  * if_stmt         → "if" "(" expression ")" statement ( "else" statement )? ;
  * print_stmt      → "print" expression ";" ;
+ * return_stmt     → "return" expression? ";" ;
  * while_stmt      → "while" "(" expression ")" statement ;
- * block          → "{" declaration* "}" ;
+ * block           → "{" declaration* "}" ;
  *
  * expression     → assignment ;
  * assignment     → IDENTIFIER "=" assignment
  *                | separator
  *                | logic_or ;
- * separator      → ternary ( (",") ternary)* ;
- * ternary        → logic_or ( ( ("?") ternary )* (":") ternary )* ;
+ * separator      → ternary ( "," ternary)* ;
+ * ternary        → logic_or ( ( "?" ternary )* ":" ternary )* ;
  * logic_or       → logic_and ( "or" logic_and )* ;
  * logic_and      → equality ( "and" equality)*
  * equality       → comparison ( ( "!=" | "==" ) comparison )* ;
@@ -45,7 +54,8 @@ import static com.craftinginterpreters.lox.TokenType.*;
  * addition       → multiplication ( ( "-" | "+" ) multiplication )* ;
  * multiplication → unary ( ( "/" | "*" ) unary )* ;
  * unary          → ( "!" | "-" ) unary
- *                | primary ;
+ *                | call ;
+ * call           → primary ( "(" arguments? ")" )* ;
  * primary        → "true" | "false" | "nil" | "this"
  *                | NUMBER | STRING
  *                | "(" expression ")"
@@ -74,6 +84,7 @@ class Parser {
 
     private Stmt declaration() {
         try {
+            if (match(FUN)) return functionDeclaration("function");
             if (match(VAR)) return varDeclaration();
 
             return statement();
@@ -82,6 +93,30 @@ class Parser {
 
             return null;
         }
+    }
+
+    private Stmt.Function functionDeclaration(String kind) {
+        Token name = consume(IDENTIFIER, String.format("Expect %s name.", kind));
+        consume(LEFT_PAREN, String.format("Expect '(' after %s name", kind));
+
+        List<Token> parameters = new ArrayList<>();
+        if (!check(RIGHT_PAREN)) {
+            do {
+                if (parameters.size() >= 8) {
+                    throw new RuntimeError(peek(), "Cannot have more than 8 parameters.");
+                }
+
+                parameters.add(consume(IDENTIFIER, "Expect parameter name"));
+            } while (match(COMMA));
+        }
+
+        consume(RIGHT_PAREN, "Expect ')' after parameters");
+
+        // remember, block() expect '{' to already be consumed. So we consume it here.
+        consume(LEFT_BRACE, String.format("Expect '{' before %s body.", kind));
+        List<Stmt> body = block();
+
+        return new Stmt.Function(name, parameters, body);
     }
 
     private Stmt varDeclaration() {
@@ -100,8 +135,9 @@ class Parser {
     private Stmt statement() {
         if (match(FOR)) return forStatement();
         if (match(IF)) return ifStatement();
-        if (match(WHILE)) return whileStatement();
         if (match(PRINT)) return printStatement();
+        if (match(RETURN)) return returnStatement();
+        if (match(WHILE)) return whileStatement();
         if (match(LEFT_BRACE)) return new Stmt.Block(block());
 
         return expressionStatement();
@@ -216,6 +252,17 @@ class Parser {
         Stmt body = statement();
 
         return new Stmt.While(condition, body);
+    }
+
+    private Stmt returnStatement() {
+        Token keyword = previous();
+        Expr value = null;
+        if (!check(SEMICOLON)) {
+            value = expression();
+        }
+
+        consume(SEMICOLON, "Expect ';' after return value.");
+        return new Stmt.Return(keyword, value);
     }
 
     private Stmt printStatement() {
@@ -351,7 +398,42 @@ class Parser {
             return new Expr.Unary(operator, right);
         }
 
-        return primary();
+        return call();
+    }
+
+    private Expr call() {
+        Expr expr = primary();
+
+        while (true) {
+            if (match(LEFT_PAREN)) {
+                expr = finishCall(expr);
+            } else {
+                break;
+            }
+        }
+
+        return expr;
+    }
+
+    private Expr finishCall(Expr callee) {
+        List<Expr> arguments = new ArrayList<>();
+        if (!check(RIGHT_PAREN)) {
+            do {
+                if (arguments.size() >= 8) {
+                    error(peek(), "Cannot have more than 8 arguments.");
+                }
+
+                // it's ternary here, not expression because:
+                // - we don't want the user to be able to declare variables inside function arguments
+                // - the separator operator would be confused with parameters if it's expression because
+                //   precedence. (Should we change precedence? What about other languages?)
+                arguments.add(ternary());
+            } while (match(COMMA));
+        }
+
+        Token paren = consume(RIGHT_PAREN, "Expect ')' after arguments.");
+
+        return new Expr.Call(callee, paren, arguments);
     }
 
     private Expr primary() {

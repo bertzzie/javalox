@@ -1,0 +1,28 @@
+fun makeCounter() {
+  var i = 0;
+  fun count() {
+    i = i + 1;
+    print i;
+  }
+
+  return count;
+}
+
+var counter = makeCounter();
+counter(); // prints "1"
+counter(); // prints "2"
+
+fun makePoint(x, y) {
+  fun closure(method) {
+    if (method == "x") return x;
+    if (method == "y") return y;
+
+    print "Unknown method " + method;
+  }
+
+  return closure;
+}
+
+var point = makePoint(2, 3);
+print point("x"); // prints "2"
+print point("y"); // prints "3"
